@@ -58,11 +58,15 @@ def create_app(config_class=Config):
     _configurar_puerta_de_acceso(app)
 
     # Crear tablas, migrar columnas nuevas y semilla de configuración.
-    with app.app_context():
-        from . import models  # noqa: F401
-        db.create_all()
-        _migrar_esquema()
-        models.Configuracion.obtener()
+    # Solo en modo local (SQLite): en la nube (Postgres) el esquema ya lo dejó
+    # armado el script de migración, así que evitamos esas consultas en cada
+    # arranque en frío del servidor (más rápido y sin escrituras innecesarias).
+    if app.config["SQLALCHEMY_DATABASE_URI"].startswith("sqlite"):
+        with app.app_context():
+            from . import models  # noqa: F401
+            db.create_all()
+            _migrar_esquema()
+            models.Configuracion.obtener()
 
     return app
 

@@ -181,6 +181,7 @@ class Operacion(db.Model):
         back_populates="operacion",
         cascade="all, delete-orphan",
         order_by="LineaComision.id",
+        lazy="selectin",  # carga anticipada: evita N+1 al listar operaciones
     )
 
     # --- Totales derivados (solo cuentan las puntas que generan comisión) ---
@@ -265,10 +266,11 @@ class LineaComision(db.Model):
     monto_agente = db.Column(db.Numeric(18, 2), default=0)
 
     operacion = db.relationship("Operacion", back_populates="lineas")
-    agente = db.relationship("Agente", back_populates="lineas")
+    agente = db.relationship("Agente", back_populates="lineas", lazy="selectin")
     figuras = db.relationship(
         "FiguraComision", back_populates="linea",
         cascade="all, delete-orphan", order_by="FiguraComision.id",
+        lazy="selectin",  # carga anticipada: evita N+1 con las figuras
     )
 
     @property
@@ -339,8 +341,8 @@ class FiguraComision(db.Model):
     monto_agente = db.Column(db.Numeric(18, 2), default=0)
 
     linea = db.relationship("LineaComision", back_populates="figuras")
-    agente = db.relationship("Agente")
-    tipo_figura_personalizada = db.relationship("TipoFiguraPersonalizada")
+    agente = db.relationship("Agente", lazy="selectin")
+    tipo_figura_personalizada = db.relationship("TipoFiguraPersonalizada", lazy="selectin")
 
     @property
     def etiqueta_tipo(self):
