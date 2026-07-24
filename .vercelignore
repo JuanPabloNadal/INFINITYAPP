@@ -1,0 +1,20 @@
+# No subir a Vercel: entorno local, base de datos, assets pesados
+venv/
+instance/
+*.db
+LOGOS/
+Instalador/
+__pycache__/
+*.pyc
+*.zip
+infinity.log
+.git/
+.env*
+seed_2026.py
+seed_alquileres_2026.py
+tests_app.py
+tests_calculo.py
+setup.bat
+iniciar.bat
+iniciar.vbs
+migrar_a_postgres.py

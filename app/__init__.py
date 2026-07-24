@@ -13,7 +13,11 @@ def create_app(config_class=Config):
     app = Flask(__name__, instance_relative_config=False)
     app.config.from_object(config_class)
 
-    os.makedirs(INSTANCE_DIR, exist_ok=True)
+    # La carpeta instance/ solo hace falta para SQLite (modo local de escritorio).
+    # En la nube usamos Postgres y el filesystem es de solo lectura, así que no
+    # intentamos crearla (daría OSError: Read-only file system).
+    if app.config["SQLALCHEMY_DATABASE_URI"].startswith("sqlite"):
+        os.makedirs(INSTANCE_DIR, exist_ok=True)
 
     db.init_app(app)
 
