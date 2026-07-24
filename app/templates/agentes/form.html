@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% block titulo %}{{ 'Nuevo agente' if modo == 'nuevo' else 'Editar agente' }} · Infinity{% endblock %}
+{% block encabezado %}{{ 'Nuevo agente' if modo == 'nuevo' else 'Editar agente' }}{% endblock %}
+
+{% block contenido %}
+<form method="post">
+  <div class="card" style="max-width:620px">
+    <div class="form-grid form-grid--2">
+      <div class="campo">
+        <label>Nombre <span class="requerido">*</span></label>
+        <input type="text" name="nombre" value="{{ agente.nombre if agente else '' }}" required>
+      </div>
+      <div class="campo">
+        <label>Apellido <span class="requerido">*</span></label>
+        <input type="text" name="apellido" value="{{ agente.apellido if agente else '' }}" required>
+      </div>
+    </div>
+    <div class="form-grid form-grid--2 mt-16">
+      <div class="campo">
+        <label>Matrícula (opcional)</label>
+        <input type="text" name="matricula" value="{{ agente.matricula if agente else '' }}">
+      </div>
+    </div>
+    <div class="mt-16 check">
+      <input type="checkbox" id="titulo" name="tiene_titulo_corredor"
+             {{ 'checked' if agente and agente.tiene_titulo_corredor }}>
+      <label for="titulo">Tiene título de corredor inmobiliario (sugiere retención 20%)</label>
+    </div>
+    <div class="mt-16 check">
+      <input type="checkbox" id="activo" name="activo"
+             {{ 'checked' if (not agente) or agente.activo }}>
+      <label for="activo">Activo</label>
+    </div>
+
+    <div class="mt-16 check">
+      <input type="checkbox" id="captador" name="es_captador_desarrollo"
+             {{ 'checked' if agente and agente.es_captador_desarrollo }}>
+      <label for="captador">Es captador de desarrollo (Acta 001/2026)</label>
+    </div>
+    <div class="campo campo-desarrollos-captados mt-16 {{ 'oculto' if not (agente and agente.es_captador_desarrollo) }}">
+      <label>Desarrollos que captó</label>
+      <input type="text" name="desarrollos_captados"
+             value="{{ agente.desarrollos_captados if agente else '' }}"
+             placeholder="Ej.: MDAY, IES">
+      <span class="hint">Separá varios con coma. Cobra un % en cada operación de esos desarrollos, aunque no la trabaje. Ver la pestaña Figuras.</span>
+    </div>
+  </div>
+  <div class="barra-acciones mt-16">
+    <a href="{{ url_for('agentes.listado') }}" class="btn btn--borde">Cancelar</a>
+    <button type="submit" class="btn btn--primario">Guardar</button>
+  </div>
+</form>
+<script>
+  (function () {
+    var check = document.getElementById("captador");
+    var campo = document.querySelector(".campo-desarrollos-captados");
+    if (!check || !campo) return;
+    check.addEventListener("change", function () {
+      campo.classList.toggle("oculto", !check.checked);
+    });
+  })();
+</script>
+{% endblock %}

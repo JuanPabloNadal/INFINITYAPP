@@ -1,0 +1,129 @@
+{% extends "base.html" %}
+{% block titulo %}{{ operacion.propiedad }} · Infinity{% endblock %}
+{% block encabezado %}Operación · {{ operacion.propiedad }}{% endblock %}
+{% block acciones_top %}
+  <a href="{{ url_for('operaciones.editar', operacion_id=operacion.id) }}" class="btn btn--borde">Editar</a>
+{% endblock %}
+
+{% block contenido %}
+<div class="grid grid--2">
+  <div class="card">
+    <div class="card__titulo">Datos de la operación</div>
+    <ul class="detalle-lista">
+      <li><span class="k">Tipo</span>
+        <span><span class="chip chip--{{ 'cv' if operacion.tipo == 'COMPRAVENTA' else 'alq' }}">
+          {{ 'Compraventa' if operacion.tipo == 'COMPRAVENTA' else 'Alquiler' }}</span></span></li>
+      <li><span class="k">Fecha</span><span>{{ operacion.fecha|fecha }}</span></li>
+      <li><span class="k">Propiedad</span><span>{{ operacion.propiedad }}</span></li>
+      <li><span class="k">Moneda</span><span>{{ operacion.moneda }}</span></li>
+      {% if operacion.tipo == 'COMPRAVENTA' %}
+        <li><span class="k">Monto de venta</span>
+          <span class="dinero">{{ operacion.monto_venta|moneda(operacion.moneda) }}</span></li>
+      {% else %}
+        <li><span class="k">Duración</span><span>{{ operacion.duracion_meses or '—' }} meses</span></li>
+        <li><span class="k">Canon mensual</span>
+          <span class="dinero">{{ operacion.canon_mensual|moneda(operacion.moneda) }}</span></li>
+        <li><span class="k">Monto total contrato</span>
+          <span class="dinero">{{ operacion.monto_total_contrato|moneda(operacion.moneda) }}</span></li>
+      {% endif %}
+      {% if operacion.notas %}<li><span class="k">Notas</span><span>{{ operacion.notas }}</span></li>{% endif %}
+    </ul>
+  </div>
+
+  <div class="card">
+    <div class="card__titulo">Totales (puntas de Infinity)</div>
+    {% if operacion.genera_comision %}
+    <ul class="detalle-lista">
+      <li><span class="k">Comisión bruta total</span>
+        <span class="dinero">{{ operacion.comision_bruta_total|moneda(operacion.moneda) }}</span></li>
+      <li><span class="k">Quedó en la inmobiliaria</span>
+        <span class="dinero">{{ operacion.monto_inmobiliaria_total|moneda(operacion.moneda) }}</span></li>
+      <li><span class="k">Total agentes</span>
+        <span class="dinero">{{ operacion.monto_agente_total|moneda(operacion.moneda) }}</span></li>
+    </ul>
+    {% else %}
+      <div class="vacio-estado mb-0"><p>Esta operación no genera comisión para Infinity.</p></div>
+    {% endif %}
+  </div>
+</div>
+
+{% set hay_figuras = operacion.lineas|selectattr('figuras')|list %}
+<div class="card mt-16">
+  <div class="card__titulo">Puntas / líneas de comisión</div>
+  {% if hay_figuras %}
+    <p class="meta" style="margin:-6px 0 14px">
+      Cuando hay figuras adicionales (datero, captador de desarrollo, AAA), la fila
+      principal muestra la <strong>comisión bruta total</strong> de la punta, pero
+      <strong>Inmobiliaria</strong> y <strong>Agente</strong> reflejan solo lo que le
+      queda al agente principal después de descontarlas — cada figura se detalla
+      debajo con su propio reparto.
+    </p>
+  {% endif %}
+  <div class="tabla-wrap">
+    <table class="tabla">
+      <thead><tr>
+        <th>Punta</th><th>Representación</th><th>Base</th><th>Comisión</th>
+        <th class="num">Retención</th><th class="num">Bruta</th>
+        <th class="num">Inmobiliaria</th><th class="num">Agente</th>
+      </tr></thead>
+      <tbody>
+        {% for l in operacion.lineas %}
+        <tr>
+          <td>{{ l.etiqueta_rol }}</td>
+          <td>
+            {% if l.representacion == 'INFINITY' %}
+              <span class="chip chip--infinity">Infinity</span> {{ l.representante }}
+            {% elif l.representacion == 'DESARROLLO' %}
+              <span class="chip chip--desarrollo">Desarrollo</span> {{ l.representante }}
+            {% elif l.representacion == 'OTRA_INMOBILIARIA' %}
+              <span class="chip chip--otra">Otra</span> {{ l.representante }}
+            {% else %}
+              <span class="chip chip--particular">Particular</span>
+            {% endif %}
+          </td>
+          {% if l.genera_comision %}
+            <td class="dinero">{{ l.base_calculo|moneda(operacion.moneda) }}</td>
+            <td>
+              {% if l.comision_tipo == 'PORCENTAJE' %}{{ l.comision_porcentaje|porcentaje }}
+              {% else %}Monto fijo{% endif %}
+              {% if l.comision_motivo_edicion %}
+                <br><span class="meta">↳ {{ l.comision_motivo_edicion }}</span>
+              {% endif %}
+            </td>
+            <td class="num">{{ l.retencion_porcentaje }}%</td>
+            <td class="num dinero">{{ l.comision_bruta|moneda(operacion.moneda) }}</td>
+            <td class="num dinero">{{ l.monto_inmobiliaria|moneda(operacion.moneda) }}</td>
+            <td class="num dinero">{{ l.monto_agente|moneda(operacion.moneda) }}</td>
+          {% else %}
+            <td colspan="6" class="meta">No genera comisión para Infinity.</td>
+          {% endif %}
+        </tr>
+        {% for f in l.figuras %}
+        <tr class="fila-figura">
+          <td>↳ {{ f.etiqueta_tipo }}</td>
+          <td>
+            <span class="chip chip--desarrollo">{{ f.agente.nombre_completo if f.agente else 'Sin agente' }}</span>
+            {% if f.situacion_aaa %}<br><span class="meta">{{ f.etiqueta_situacion }}</span>{% endif %}
+          </td>
+          <td class="meta">—</td>
+          <td>{{ f.porcentaje|porcentaje }}</td>
+          <td class="num">{{ f.retencion_porcentaje }}%</td>
+          <td class="num dinero">{{ f.comision_bruta|moneda(operacion.moneda) }}</td>
+          <td class="num dinero">{{ f.monto_inmobiliaria|moneda(operacion.moneda) }}</td>
+          <td class="num dinero">{{ f.monto_agente|moneda(operacion.moneda) }}</td>
+        </tr>
+        {% endfor %}
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="barra-acciones mt-16">
+  <a href="{{ url_for('operaciones.listado') }}" class="btn btn--borde">← Volver</a>
+  <form method="post" action="{{ url_for('operaciones.eliminar', operacion_id=operacion.id) }}"
+        onsubmit="return confirm('¿Eliminar esta operación? Esta acción no se puede deshacer.');">
+    <button type="submit" class="btn btn--peligro">Eliminar operación</button>
+  </form>
+</div>
+{% endblock %}

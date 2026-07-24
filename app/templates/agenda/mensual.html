@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% block titulo %}Agenda · Infinity{% endblock %}
+{% block encabezado %}Agenda{% endblock %}
+
+{% block contenido %}
+<div class="barra-acciones">
+  <div class="titulo-periodo">{{ nombre_mes(mes).capitalize() }} {{ anio }}</div>
+  <div style="display:flex;gap:8px;align-items:center">
+    <span class="meta">{{ total_operaciones }} operación(es)</span>
+    <a class="btn btn--borde btn--sm" href="{{ url_for('agenda.mensual', mes=nav.mes_ant, anio=nav.anio_ant) }}">← Mes anterior</a>
+    <a class="btn btn--borde btn--sm" href="{{ url_for('agenda.mensual') }}">Hoy</a>
+    <a class="btn btn--borde btn--sm" href="{{ url_for('agenda.mensual', mes=nav.mes_sig, anio=nav.anio_sig) }}">Mes siguiente →</a>
+  </div>
+</div>
+
+<div class="card">
+  <table class="cal">
+    <thead><tr>{% for d in dias_semana %}<th>{{ d }}</th>{% endfor %}</tr></thead>
+    <tbody>
+      {% for semana in semanas %}
+      <tr>
+        {% for dia in semana %}
+          {% if dia == 0 %}
+            <td class="vacio"></td>
+          {% else %}
+            {% set ops = por_dia.get(dia, []) %}
+            {% set es_hoy = (anio == hoy.year and mes == hoy.month and dia == hoy.day) %}
+            <td class="{{ 'hoy' if es_hoy }}">
+              <span class="dia-num">{{ dia }}</span>
+              {% for op in ops[:3] %}
+                <a class="ev ev--{{ 'cv' if op.tipo == 'COMPRAVENTA' else 'alq' }}"
+                   href="{{ url_for('operaciones.ver', operacion_id=op.id) }}"
+                   title="{{ op.propiedad }} — {{ op.comision_bruta_total|moneda(op.moneda) }}">
+                  {{ op.propiedad }}</a>
+              {% endfor %}
+              {% if ops|length > 3 %}<span class="mas">+{{ ops|length - 3 }} más</span>{% endif %}
+            </td>
+          {% endif %}
+        {% endfor %}
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{% set dias_con_ops = por_dia.keys()|list|sort %}
+{% if dias_con_ops %}
+<div class="card mt-16">
+  <div class="card__titulo">Detalle del mes</div>
+  {% for dia in dias_con_ops %}
+    <div style="margin-bottom:14px">
+      <div class="meta" style="margin-bottom:6px"><strong>{{ '%02d'|format(dia) }}/{{ '%02d'|format(mes) }}/{{ anio }}</strong></div>
+      <div class="tabla-wrap">
+        <table class="tabla">
+          <tbody>
+            {% for op in por_dia[dia] %}
+            <tr onclick="location.href='{{ url_for('operaciones.ver', operacion_id=op.id) }}'" style="cursor:pointer">
+              <td><span class="chip chip--{{ 'cv' if op.tipo == 'COMPRAVENTA' else 'alq' }}">
+                {{ 'Compraventa' if op.tipo == 'COMPRAVENTA' else 'Alquiler' }}</span></td>
+              <td>{{ op.propiedad }}</td>
+              <td>{{ op.agentes_intervinientes|join(', ') or '—' }}</td>
+              <td class="num dinero">{{ op.comision_bruta_total|moneda(op.moneda) }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  {% endfor %}
+</div>
+{% endif %}
+{% endblock %}

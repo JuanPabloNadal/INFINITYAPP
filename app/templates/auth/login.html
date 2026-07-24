@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="es-AR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Ingresar · Infinity Inmobiliaria</title>
+  <link rel="icon" type="image/png" href="{{ url_for('static', filename='img/favicon.png') }}">
+  <link rel="shortcut icon" href="{{ url_for('static', filename='img/favicon.ico') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+</head>
+<body class="login-body">
+  <main class="login-card">
+    <img src="{{ url_for('static', filename='img/infinity-appicon.png') }}" alt="Infinity Inmobiliaria" class="login-logo">
+    <h1 class="login-titulo">INFINITY</h1>
+    <p class="login-sub">Control de operaciones</p>
+
+    {% with mensajes = get_flashed_messages(with_categories=true) %}
+      {% if mensajes %}
+        <div class="flashes" role="alert" aria-live="assertive">
+          {% for categoria, texto in mensajes %}
+            <div class="flash flash--{{ categoria }}">{{ texto }}</div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% endwith %}
+
+    <form method="post" class="login-form">
+      <div class="campo">
+        <label for="clave">Contraseña</label>
+        <input type="password" id="clave" name="clave" autocomplete="current-password"
+               autofocus required>
+      </div>
+      <button type="submit" class="btn btn--primario login-btn">Ingresar</button>
+    </form>
+  </main>
+</body>
+</html>

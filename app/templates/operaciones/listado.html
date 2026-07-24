@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+{% block titulo %}Operaciones · Infinity{% endblock %}
+{% block encabezado %}Operaciones{% endblock %}
+{% block acciones_top %}
+  <a href="{{ url_for('operaciones.nueva') }}" class="btn btn--primario">＋ Nueva operación</a>
+{% endblock %}
+
+{% block contenido %}
+<div class="card">
+  <form method="get" class="filtros">
+    <div class="campo">
+      <label>Buscar (propiedad / notas)</label>
+      <input type="search" name="q" value="{{ filtros.get('q','') }}" placeholder="Ej.: Los Ceibos">
+    </div>
+    <div class="campo">
+      <label>Tipo</label>
+      <select name="tipo">
+        <option value="">Todos</option>
+        <option value="COMPRAVENTA" {{ 'selected' if filtros.get('tipo') == 'COMPRAVENTA' }}>Compraventa</option>
+        <option value="ALQUILER" {{ 'selected' if filtros.get('tipo') == 'ALQUILER' }}>Alquiler</option>
+      </select>
+    </div>
+    <div class="campo">
+      <label>Agente</label>
+      <select name="agente_id">
+        <option value="">Todos</option>
+        {% for a in agentes %}
+          <option value="{{ a.id }}" {{ 'selected' if filtros.get('agente_id')|string == a.id|string }}>
+            {{ a.nombre_completo }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="campo">
+      <label>Desde</label>
+      <input type="date" name="desde" value="{{ filtros.get('desde','') }}">
+    </div>
+    <div class="campo">
+      <label>Hasta</label>
+      <input type="date" name="hasta" value="{{ filtros.get('hasta','') }}">
+    </div>
+    <div class="acciones">
+      <button type="submit" class="btn btn--primario">Filtrar</button>
+      <a href="{{ url_for('operaciones.listado') }}" class="btn btn--borde">Limpiar</a>
+    </div>
+  </form>
+</div>
+
+<div class="card mt-16">
+  <div class="card__titulo mb-0">{{ operaciones|length }} operación(es)</div>
+  {% if operaciones %}
+  <div class="tabla-wrap mt-16">
+    <table class="tabla">
+      <thead><tr>
+        <th data-sort-key="fecha" data-sort-type="date" data-sort-default="asc">Fecha</th>
+        <th>Tipo</th><th>Propiedad</th><th>Agentes</th>
+        <th data-sort-key="mon" data-sort-type="text" data-sort-default="asc">Mon.</th>
+        <th class="num" data-sort-key="bruta" data-sort-type="number" data-sort-default="desc">Comisión bruta</th>
+        <th class="num" data-sort-key="agente" data-sort-type="number" data-sort-default="desc">Agente</th>
+        <th class="num" data-sort-key="inmo" data-sort-type="number" data-sort-default="desc">Inmobiliaria</th>
+        <th></th>
+      </tr></thead>
+      <tbody>
+        {% for op in operaciones %}
+        <tr>
+          <td data-sort="{{ op.fecha.isoformat() }}">{{ op.fecha|fecha }}</td>
+          <td><span class="chip chip--{{ 'cv' if op.tipo == 'COMPRAVENTA' else 'alq' }}">
+            {{ 'Compraventa' if op.tipo == 'COMPRAVENTA' else 'Alquiler' }}</span></td>
+          <td><a href="{{ url_for('operaciones.ver', operacion_id=op.id) }}">{{ op.propiedad }}</a></td>
+          <td>{{ op.agentes_intervinientes|join(', ') or '—' }}</td>
+          <td data-sort="{{ op.moneda }}"><span class="chip chip--moneda">{{ op.moneda }}</span></td>
+          <td class="num dinero" data-sort="{{ op.comision_bruta_total }}">{{ op.comision_bruta_total|moneda(op.moneda) }}</td>
+          <td class="num dinero" data-sort="{{ op.monto_agente_total }}">{{ op.monto_agente_total|moneda(op.moneda) }}</td>
+          <td class="num dinero" data-sort="{{ op.monto_inmobiliaria_total }}">{{ op.monto_inmobiliaria_total|moneda(op.moneda) }}</td>
+          <td>
+            <div class="acciones-fila">
+              <a href="{{ url_for('operaciones.ver', operacion_id=op.id) }}" class="btn btn--borde btn--sm">Ver</a>
+              <a href="{{ url_for('operaciones.editar', operacion_id=op.id) }}" class="btn btn--borde btn--sm">Editar</a>
+              <form method="post" action="{{ url_for('operaciones.eliminar', operacion_id=op.id) }}"
+                    onsubmit="return confirm('¿Eliminar esta operación? Esta acción no se puede deshacer.');">
+                <button type="submit" class="btn btn--peligro btn--sm">Eliminar</button>
+              </form>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+    <div class="vacio-estado">
+      <img class="vacio-badge" src="{{ url_for('static', filename='img/infinity-badge.png') }}" alt="">
+      <p>No hay operaciones que coincidan con los filtros.</p>
+      <a href="{{ url_for('operaciones.nueva') }}" class="btn btn--primario">Cargar una operación</a>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/operaciones-sort.js') }}"></script>
+{% endblock %}

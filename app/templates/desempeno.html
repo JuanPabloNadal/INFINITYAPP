@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+{% block titulo %}Desempeño · Infinity{% endblock %}
+{% block encabezado %}Desempeño{% endblock %}
+
+{% block contenido %}
+<div class="card">
+  <form method="get" class="filtros" id="form-desempeno">
+    <div class="campo" style="max-width:230px">
+      <label>Tipo de cambio (1 US$ = $ ___)</label>
+      <div style="display:flex;align-items:center;gap:8px">
+        <span class="meta" style="font-weight:700">US$ 1 =</span>
+        <input type="number" name="tc" min="1" step="0.01" value="{{ tc }}" style="max-width:130px">
+      </div>
+      <span class="hint">Convierte las comisiones en US$ a pesos.</span>
+    </div>
+    <div class="campo" style="max-width:170px">
+      <label>Período</label>
+      <select name="anio">
+        <option value="todo" {{ 'selected' if periodo_sel == 'todo' }}>Todo el historial</option>
+        {% for y in anios %}
+          <option value="{{ y }}" {{ 'selected' if periodo_sel == y|string }}>Año {{ y }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="acciones">
+      <button type="submit" class="btn btn--primario">Aplicar</button>
+    </div>
+  </form>
+</div>
+
+<div class="barra-acciones mt-16">
+  <div>
+    <div class="titulo-periodo">{{ etiqueta_periodo }} · {{ total_ops }} operación(es)</div>
+    <div class="meta">Todo expresado en pesos a <strong>US$ 1 = {{ tc|moneda('ARS', 0) }}</strong></div>
+  </div>
+  <a class="btn btn--naranja" href="{{ url_for('desempeno.pdf', tc=tc, anio=periodo_sel) }}">⬇ Exportar PDF</a>
+</div>
+
+<div class="grid grid--3" style="margin-bottom:20px">
+  <div class="kpi">
+    <div class="kpi__label">Comisión bruta total</div>
+    <div class="kpi__valor">{{ resumen.bruta|moneda('ARS', 0) }}</div>
+    <div class="kpi__nota">Compraventa + alquiler, en pesos</div>
+  </div>
+  <div class="kpi">
+    <div class="kpi__label">Ingresos de la inmobiliaria</div>
+    <div class="kpi__valor naranja">{{ resumen.inmobiliaria|moneda('ARS', 0) }}</div>
+    <div class="kpi__nota">Retenciones acumuladas</div>
+  </div>
+  <div class="kpi">
+    <div class="kpi__label">Ingresos de agentes</div>
+    <div class="kpi__valor">{{ resumen.agentes|moneda('ARS', 0) }}</div>
+    <div class="kpi__nota">Suma de lo cobrado por agentes</div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card__titulo">Ranking de ingresos en pesos — de mayores a menores</div>
+  {% if filas and resumen.maximo %}
+  <div class="ranking">
+    {% for f in filas %}
+    <div class="rank-fila {{ 'rank-fila--inmo' if f.tipo == 'inmobiliaria' }}">
+      <div class="rank-pos">{{ loop.index }}</div>
+      <div class="rank-cuerpo">
+        <div class="rank-top">
+          <span class="rank-nombre">
+            {% if f.tipo == 'inmobiliaria' %}🏢 {% endif %}{{ f.nombre }}
+          </span>
+          <span class="rank-monto dinero">{{ f.ars|moneda('ARS', 0) }}</span>
+        </div>
+        <div class="rank-barra-track">
+          <div class="rank-barra {{ 'rank-barra--inmo' if f.tipo == 'inmobiliaria' }}"
+               style="width: {{ f.pct }}%"></div>
+        </div>
+        <div class="rank-meta">
+          {{ f.puntas }} {{ 'comisiones' if f.tipo == 'inmobiliaria' else 'punta(s)' }}
+          {% if f.de_usd and f.de_ars %}
+            · de US$: {{ f.de_usd|moneda('ARS', 0) }} · de $: {{ f.de_ars|moneda('ARS', 0) }}
+          {% elif f.de_usd %}
+            · origen US$ (convertido)
+          {% else %}
+            · origen $
+          {% endif %}
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+    <div class="vacio-estado">
+      <img class="vacio-badge" src="{{ url_for('static', filename='img/infinity-badge.png') }}" alt="">
+      <p>No hay comisiones en este período.</p>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

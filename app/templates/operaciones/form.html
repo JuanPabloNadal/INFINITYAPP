@@ -1,0 +1,402 @@
+{% extends "base.html" %}
+{% block titulo %}{{ 'Nueva operación' if modo == 'nueva' else 'Editar operación' }} · Infinity{% endblock %}
+{% block encabezado %}{{ 'Nueva operación' if modo == 'nueva' else 'Editar operación' }}{% endblock %}
+
+{% macro punta_block(i, etiqueta_cv, etiqueta_alq) %}
+<div class="punta" data-punta="{{ i }}">
+  <div class="punta__head">
+    <span class="punta__rol" data-rol-cv="{{ etiqueta_cv }}" data-rol-alq="{{ etiqueta_alq }}">{{ etiqueta_cv }}</span>
+  </div>
+
+  <div class="campo">
+    <label>Representada por</label>
+    <select name="punta{{ i }}_representacion" class="rep-select" data-punta="{{ i }}">
+      {% set rep = form.get('punta' ~ i ~ '_representacion', 'INFINITY' if i == 1 else 'INFINITY') %}
+      <option value="INFINITY"          {{ 'selected' if rep == 'INFINITY' }}>Infinity (genera comisión)</option>
+      <option value="DESARROLLO"        {{ 'selected' if rep == 'DESARROLLO' }}>Desarrollo (constructora/desarrolladora)</option>
+      <option value="OTRA_INMOBILIARIA" {{ 'selected' if rep == 'OTRA_INMOBILIARIA' }}>Otra inmobiliaria</option>
+      <option value="PARTICULAR"        {{ 'selected' if rep == 'PARTICULAR' }}>Particular / sin intermediación</option>
+    </select>
+  </div>
+
+  {# --- Bloque Infinity / Desarrollo (genera comisión) --- #}
+  <div class="solo-infinity bloque-infinity" data-punta="{{ i }}" style="margin-top:14px">
+    <div class="campo campo-desarrollo oculto" data-punta="{{ i }}" style="margin-bottom:14px">
+      <label>Nombre del desarrollo <span class="requerido">*</span></label>
+      <input type="text" name="punta{{ i }}_nombreDesarrollo" list="lista-desarrollos"
+             class="desarrollo-input" data-punta="{{ i }}"
+             value="{{ form.get('punta' ~ i ~ '_nombreDesarrollo', '') }}"
+             placeholder="Ej.: IES, Proyecto Norte, MDay…">
+      <span class="hint">La desarrolladora paga la comisión (el comprador no paga). Una sola punta.</span>
+    </div>
+    <div class="form-grid form-grid--2">
+      <div class="campo">
+        <label>Agente de Infinity <span class="requerido">*</span></label>
+        <select name="punta{{ i }}_agenteId" class="agente-select" data-punta="{{ i }}">
+          <option value="">— Seleccionar agente —</option>
+          {% for a in agentes %}
+            <option value="{{ a.id }}" data-retencion="{{ a.retencion_sugerida }}"
+              {{ 'selected' if form.get('punta' ~ i ~ '_agenteId')|string == a.id|string }}>
+              {{ a.nombre_completo }}{{ ' · corredor' if a.tiene_titulo_corredor }}</option>
+          {% endfor %}
+        </select>
+        {% if not agentes %}<span class="hint">No hay agentes activos. <a href="{{ url_for('agentes.nuevo') }}">Crear uno</a>.</span>{% endif %}
+      </div>
+      <div class="campo">
+        <label>Retención inmobiliaria</label>
+        <select name="punta{{ i }}_retencionPorcentaje" class="retencion-select" data-punta="{{ i }}">
+          {% set ret = form.get('punta' ~ i ~ '_retencionPorcentaje', '30')|string %}
+          {% for r in cfg.lista_retencion %}
+            <option value="{{ r }}" {{ 'selected' if ret == r|string }}>{{ r }}%</option>
+          {% endfor %}
+        </select>
+      </div>
+    </div>
+
+    <div class="form-grid form-grid--3" style="margin-top:14px">
+      <div class="campo">
+        <label>Forma de comisión</label>
+        <select name="punta{{ i }}_comisionTipo" class="comtipo-select" data-punta="{{ i }}">
+          {% set ct = form.get('punta' ~ i ~ '_comisionTipo', 'PORCENTAJE') %}
+          <option value="PORCENTAJE" {{ 'selected' if ct == 'PORCENTAJE' }}>Porcentaje (%)</option>
+          <option value="MONTO_FIJO" {{ 'selected' if ct == 'MONTO_FIJO' }}>Monto fijo</option>
+        </select>
+      </div>
+      <div class="campo campo-porcentaje" data-punta="{{ i }}">
+        <label>Comisión %</label>
+        <input type="number" step="0.01" min="0" name="punta{{ i }}_comisionPorcentaje"
+               class="com-porcentaje" data-punta="{{ i }}"
+               value="{{ form.get('punta' ~ i ~ '_comisionPorcentaje', '') }}">
+      </div>
+      <div class="campo campo-fijo oculto" data-punta="{{ i }}">
+        <label>Monto fijo de comisión</label>
+        <input type="number" step="0.01" min="0" name="punta{{ i }}_comisionMontoFijo"
+               class="com-fijo" data-punta="{{ i }}"
+               value="{{ form.get('punta' ~ i ~ '_comisionMontoFijo', '') }}">
+      </div>
+      <div class="campo">
+        <label>Base de cálculo</label>
+        <input type="number" step="0.01" min="0" name="punta{{ i }}_baseCalculo"
+               class="base-calc" data-punta="{{ i }}"
+               value="{{ form.get('punta' ~ i ~ '_baseCalculo', '') }}">
+        <span class="hint">Por defecto, el monto de la operación.</span>
+      </div>
+    </div>
+
+    <div class="campo campo-motivo oculto" data-punta="{{ i }}" style="margin-top:14px">
+      <label>Motivo del cambio de comisión <span class="requerido">*</span></label>
+      <input type="text" name="punta{{ i }}_comisionMotivoEdicion" class="motivo" data-punta="{{ i }}"
+             placeholder="Ej.: 1% por acuerdo de honorarios firmado con el cliente"
+             value="{{ form.get('punta' ~ i ~ '_comisionMotivoEdicion', '') }}">
+      <span class="hint">Obligatorio cuando el porcentaje difiere del valor por defecto.</span>
+    </div>
+
+    <div class="punta__calc" data-punta="{{ i }}">
+      <div class="item"><div class="lbl">Comisión bruta</div><div class="val out-bruta">—</div></div>
+      <div class="item"><div class="lbl">Inmobiliaria</div><div class="val out-inmo">—</div></div>
+      <div class="item"><div class="lbl">Agente</div><div class="val out-agente">—</div></div>
+    </div>
+
+    {# --- Figuras adicionales: acta 001/2026 (solo compraventa) + personalizadas (cualquier tipo) --- #}
+    <div class="figuras-compraventa oculto" data-punta="{{ i }}">
+      <div class="figuras-titulo">Figuras adicionales</div>
+
+      <div class="figuras-acta-cv oculto" data-punta="{{ i }}">
+
+      {# Datero #}
+      <label class="check figura-check">
+        <input type="checkbox" name="punta{{ i }}_datero" class="datero-check" data-punta="{{ i }}"
+               {{ 'checked' if form.get('punta' ~ i ~ '_datero') == 'on' }}>
+        <span>Hubo <strong>datero</strong> (agente que acercó un comprador con contacto en otra inmobiliaria)</span>
+      </label>
+      <div class="figura-detalle oculto" data-figura="datero" data-punta="{{ i }}">
+        <div class="form-grid form-grid--3">
+          <div class="campo">
+            <label>Agente datero</label>
+            <select name="punta{{ i }}_dateroAgenteId" class="figura-agente-select" data-punta="{{ i }}" data-figura="datero">
+              <option value="">— Seleccionar —</option>
+              {% for a in agentes %}
+                <option value="{{ a.id }}" data-retencion="{{ a.retencion_sugerida }}"
+                  {{ 'selected' if form.get('punta' ~ i ~ '_dateroAgenteId')|string == a.id|string }}>
+                  {{ a.nombre_completo }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="campo">
+            <label>% sobre la comisión</label>
+            <input type="text" class="figura-pct-fijo" value="{{ cfg.datero_pct|int }}%" disabled>
+          </div>
+          <div class="campo">
+            <label>Retención (del datero)</label>
+            <select name="punta{{ i }}_dateroRetencion" class="figura-retencion-select" data-punta="{{ i }}" data-figura="datero">
+              {% set ret_datero = form.get('punta' ~ i ~ '_dateroRetencion', '30')|string %}
+              {% for r in cfg.lista_retencion %}
+                <option value="{{ r }}" {{ 'selected' if ret_datero == r|string }}>{{ r }}%</option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+      </div>
+
+      {# Captador de desarrollo — solo si la punta es de tipo DESARROLLO #}
+      <div class="campo-captador oculto" data-punta="{{ i }}">
+        <label class="check figura-check">
+          <input type="checkbox" name="punta{{ i }}_captador" class="captador-check" data-punta="{{ i }}"
+                 {{ 'checked' if form.get('punta' ~ i ~ '_captador') == 'on' }}>
+          <span>Hubo <strong>captador de desarrollo</strong> (agente que introdujo a esta desarrolladora)</span>
+        </label>
+        <div class="figura-detalle oculto" data-figura="captador" data-punta="{{ i }}">
+          <div class="form-grid form-grid--3">
+            <div class="campo">
+              <label>Agente captador</label>
+              <select name="punta{{ i }}_captadorAgenteId" class="figura-agente-select" data-punta="{{ i }}" data-figura="captador">
+                <option value="">— Seleccionar —</option>
+                {% for a in agentes %}
+                  <option value="{{ a.id }}" data-retencion="{{ a.retencion_sugerida }}"
+                    {{ 'selected' if form.get('punta' ~ i ~ '_captadorAgenteId')|string == a.id|string }}>
+                    {{ a.nombre_completo }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="campo">
+              <label>% sobre la comisión</label>
+              <input type="text" class="figura-pct-fijo" value="{{ cfg.captador_desarrollo_pct|int }}%" disabled>
+            </div>
+            <div class="campo">
+              <label>Retención (del captador)</label>
+              <select name="punta{{ i }}_captadorRetencion" class="figura-retencion-select" data-punta="{{ i }}" data-figura="captador">
+                {% set ret_capt = form.get('punta' ~ i ~ '_captadorRetencion', '30')|string %}
+                {% for r in cfg.lista_retencion %}
+                  <option value="{{ r }}" {{ 'selected' if ret_capt == r|string }}>{{ r }}%</option>
+                {% endfor %}
+              </select>
+            </div>
+          </div>
+          <span class="hint">Se sugiere solo/a según lo registrado en la ficha del agente (pestaña Agentes). Podés destildarlo si no corresponde.</span>
+        </div>
+      </div>
+
+      {# Agente Asistente al Ausente (AAA) #}
+      <label class="check figura-check">
+        <input type="checkbox" name="punta{{ i }}_aaa" class="aaa-check" data-punta="{{ i }}"
+               {{ 'checked' if form.get('punta' ~ i ~ '_aaa') == 'on' }}>
+        <span>Hubo <strong>Agente Asistente al Ausente</strong> (un agente estaba de viaje)</span>
+      </label>
+      <div class="figura-detalle oculto" data-figura="aaa" data-punta="{{ i }}">
+        <div class="form-grid form-grid--3">
+          <div class="campo">
+            <label>Agente AAA</label>
+            <select name="punta{{ i }}_aaaAgenteId" class="figura-agente-select" data-punta="{{ i }}" data-figura="aaa">
+              <option value="">— Seleccionar —</option>
+              {% for a in agentes %}
+                <option value="{{ a.id }}" data-retencion="{{ a.retencion_sugerida }}"
+                  {{ 'selected' if form.get('punta' ~ i ~ '_aaaAgenteId')|string == a.id|string }}>
+                  {{ a.nombre_completo }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="campo" style="grid-column:span 2">
+            <label>Situación</label>
+            <select name="punta{{ i }}_aaaSituacion" class="aaa-situacion-select" data-punta="{{ i }}">
+              <option value="">— Seleccionar situación —</option>
+              {% set sit = form.get('punta' ~ i ~ '_aaaSituacion', '') %}
+              {% for s in aaa_situaciones %}
+                <option value="{{ s }}" {{ 'selected' if sit == s }}>{{ etiqueta_aaa_situacion[s] }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="campo">
+            <label>Retención (del AAA)</label>
+            <select name="punta{{ i }}_aaaRetencion" class="figura-retencion-select" data-punta="{{ i }}" data-figura="aaa">
+              {% set ret_aaa = form.get('punta' ~ i ~ '_aaaRetencion', '30')|string %}
+              {% for r in cfg.lista_retencion %}
+                <option value="{{ r }}" {{ 'selected' if ret_aaa == r|string }}>{{ r }}%</option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+      </div>
+
+      </div>{# /figuras-acta-cv #}
+
+      {# Figuras personalizadas (Configuración) — cualquier tipo de operación, % editable #}
+      {% for t in tipos_figura_personalizada %}
+      <label class="check figura-check">
+        <input type="checkbox" name="punta{{ i }}_personalizada{{ t.id }}" class="personalizada-check"
+               data-punta="{{ i }}" data-figura-id="{{ t.id }}"
+               {{ 'checked' if form.get('punta' ~ i ~ '_personalizada' ~ t.id) == 'on' }}>
+        <span>Hubo <strong>{{ t.nombre }}</strong></span>
+      </label>
+      <div class="figura-detalle oculto" data-figura="personalizada{{ t.id }}" data-punta="{{ i }}">
+        <div class="form-grid form-grid--3">
+          <div class="campo">
+            <label>Agente</label>
+            <select name="punta{{ i }}_personalizada{{ t.id }}AgenteId" class="figura-agente-select"
+                    data-punta="{{ i }}" data-figura="personalizada{{ t.id }}">
+              <option value="">— Seleccionar —</option>
+              {% for a in agentes %}
+                <option value="{{ a.id }}" data-retencion="{{ a.retencion_sugerida }}"
+                  {{ 'selected' if form.get('punta' ~ i ~ '_personalizada' ~ t.id ~ 'AgenteId')|string == a.id|string }}>
+                  {{ a.nombre_completo }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="campo">
+            <label>% sobre la comisión</label>
+            <input type="number" step="0.01" min="0.01"
+                   name="punta{{ i }}_personalizada{{ t.id }}Pct" class="figura-pct-input"
+                   data-punta="{{ i }}" data-figura="personalizada{{ t.id }}"
+                   value="{{ form.get('punta' ~ i ~ '_personalizada' ~ t.id ~ 'Pct', t.porcentaje_sugerido) }}">
+          </div>
+          <div class="campo">
+            <label>Retención (de {{ t.nombre }})</label>
+            <select name="punta{{ i }}_personalizada{{ t.id }}Retencion" class="figura-retencion-select"
+                    data-punta="{{ i }}" data-figura="personalizada{{ t.id }}">
+              {% set ret_pers = form.get('punta' ~ i ~ '_personalizada' ~ t.id ~ 'Retencion', '30')|string %}
+              {% for r in cfg.lista_retencion %}
+                <option value="{{ r }}" {{ 'selected' if ret_pers == r|string }}>{{ r }}%</option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+        <span class="hint">Figura excepcional creada en Configuración. El % se puede ajustar para este caso puntual.</span>
+      </div>
+      {% endfor %}
+
+      <div class="figuras-calc" data-punta="{{ i }}"></div>
+    </div>
+  </div>
+
+  {# --- Bloque Otra inmobiliaria --- #}
+  <div class="solo-otra bloque-otra oculto" data-punta="{{ i }}" style="margin-top:14px">
+    <div class="campo">
+      <label>Nombre de la inmobiliaria</label>
+      <input type="text" name="punta{{ i }}_nombreInmobiliaria" list="lista-inmobiliarias"
+             value="{{ form.get('punta' ~ i ~ '_nombreInmobiliaria', '') }}"
+             placeholder="Ej.: Remax, Gaia, Domus…">
+      <span class="hint">No genera comisión para Infinity.</span>
+    </div>
+  </div>
+</div>
+{% endmacro %}
+
+{% block contenido %}
+<datalist id="lista-inmobiliarias">
+  {% for nom in inmobiliarias %}<option value="{{ nom }}">{% endfor %}
+</datalist>
+<datalist id="lista-desarrollos">
+  {% for nom in desarrollos %}<option value="{{ nom }}">{% endfor %}
+</datalist>
+<script type="application/json" id="data-captadores">{{ captadores|tojson }}</script>
+<script type="application/json" id="data-figuras-personalizadas">{{ tipos_figura_personalizada|map(attribute='id')|list|tojson }}</script>
+
+<form method="post" id="form-operacion"
+      data-default-cv="{{ cfg.comision_default_compraventa }}"
+      data-default-alq="{{ cfg.comision_default_alquiler }}"
+      data-moneda-alq="{{ cfg.moneda_default_alquiler }}"
+      data-datero-pct="{{ cfg.datero_pct }}"
+      data-captador-pct="{{ cfg.captador_desarrollo_pct }}">
+
+  {% set tipo = form.get('tipo', 'COMPRAVENTA') %}
+
+  <div class="card">
+    <div class="card__titulo">Datos de la operación</div>
+    <div class="form-grid form-grid--3">
+      <div class="campo">
+        <label>Tipo de operación <span class="requerido">*</span></label>
+        <select name="tipo" id="tipo-select">
+          <option value="COMPRAVENTA" {{ 'selected' if tipo == 'COMPRAVENTA' }}>Compraventa (US$)</option>
+          <option value="ALQUILER"    {{ 'selected' if tipo == 'ALQUILER' }}>Alquiler</option>
+        </select>
+      </div>
+      <div class="campo">
+        <label>Fecha <span class="requerido">*</span></label>
+        <input type="date" name="fecha" value="{{ form.get('fecha', hoy_iso) }}" required>
+      </div>
+      <div class="campo campo-moneda-alq oculto">
+        <label>Moneda (alquiler)</label>
+        <select name="moneda" id="moneda-select">
+          {% set mon = form.get('moneda', cfg.moneda_default_alquiler) %}
+          <option value="ARS" {{ 'selected' if mon == 'ARS' }}>Pesos (ARS)</option>
+          <option value="USD" {{ 'selected' if mon == 'USD' }}>Dólares (US$)</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="form-grid form-grid--2" style="margin-top:14px">
+      <div class="campo" style="grid-column:1 / -1">
+        <label>Propiedad / identificación <span class="requerido">*</span></label>
+        <input type="text" name="propiedad" value="{{ form.get('propiedad', '') }}"
+               placeholder="Ej.: Casa Los Ceibos 13" required>
+      </div>
+    </div>
+
+    {# Campos Compraventa #}
+    <div class="form-grid form-grid--3 grupo-cv" style="margin-top:14px">
+      <div class="campo">
+        <label>Monto de venta (US$) <span class="requerido">*</span></label>
+        <input type="number" step="0.01" min="0" name="monto_venta" id="monto-venta"
+               value="{{ form.get('monto_venta', '') }}">
+      </div>
+    </div>
+
+    {# Campos Alquiler #}
+    <div class="form-grid form-grid--3 grupo-alq oculto" style="margin-top:14px">
+      <div class="campo">
+        <label>Duración (meses)</label>
+        <input type="number" min="1" step="1" name="duracion_meses" id="duracion-meses"
+               value="{{ form.get('duracion_meses', '') }}" placeholder="24">
+      </div>
+      <div class="campo">
+        <label>Canon mensual</label>
+        <input type="number" step="0.01" min="0" name="canon_mensual" id="canon-mensual"
+               value="{{ form.get('canon_mensual', '') }}">
+      </div>
+      <div class="campo">
+        <label>Monto total del contrato <span class="requerido">*</span></label>
+        <input type="number" step="0.01" min="0" name="monto_total_contrato" id="monto-total"
+               value="{{ form.get('monto_total_contrato', '') }}">
+        <span class="hint">Se calcula como canon × meses (editable).</span>
+      </div>
+    </div>
+
+    <div class="form-grid" style="margin-top:14px">
+      <div class="campo">
+        <label>Notas (opcional)</label>
+        <textarea name="notas">{{ form.get('notas', '') }}</textarea>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card__titulo">Puntas de la operación</div>
+    <p class="meta mb-0" style="margin-bottom:14px">
+      Indicá quién representa cada lado. Solo las puntas representadas por <strong>Infinity</strong> o por un <strong>desarrollo</strong> generan comisión.
+    </p>
+    <div class="nota-desarrollo oculto" id="nota-desarrollo">
+      🏗️ <strong>Venta de desarrollo:</strong> una sola punta — el comprador no paga comisión, la paga la desarrolladora.
+    </div>
+    {{ punta_block(0, 'Punta vendedora', 'Punta locadora') }}
+    {{ punta_block(1, 'Punta compradora', 'Punta locataria') }}
+  </div>
+
+  <div class="card">
+    <div class="card__titulo">Totales de la operación (en vivo)</div>
+    <div class="totales-vivo">
+      <div><div class="lbl">Comisión bruta</div><div class="val" id="tot-bruta">—</div></div>
+      <div><div class="lbl">Inmobiliaria</div><div class="val" id="tot-inmo">—</div></div>
+      <div><div class="lbl">Agentes</div><div class="val" id="tot-agente">—</div></div>
+    </div>
+  </div>
+
+  <div class="barra-acciones" style="margin-top:18px">
+    <a href="{{ url_for('operaciones.listado') }}" class="btn btn--borde">Cancelar</a>
+    <button type="submit" class="btn btn--primario">
+      {{ '＋ Registrar operación' if modo == 'nueva' else '✓ Guardar cambios' }}</button>
+  </div>
+</form>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/operacion.js') }}"></script>
+{% endblock %}

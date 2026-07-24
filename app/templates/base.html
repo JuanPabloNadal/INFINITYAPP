@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="es-AR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block titulo %}Infinity Inmobiliaria{% endblock %}</title>
+  <link rel="icon" type="image/png" href="{{ url_for('static', filename='img/favicon.png') }}">
+  <link rel="shortcut icon" href="{{ url_for('static', filename='img/favicon.ico') }}">
+  <link rel="apple-touch-icon" href="{{ url_for('static', filename='img/infinity-appicon.png') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+</head>
+<body>
+<a class="skip-link" href="#contenido">Saltar al contenido</a>
+<div class="layout">
+  <aside class="sidebar">
+    <div class="sidebar__logo">
+      <a href="{{ url_for('dashboard.index') }}" class="brand">
+        <img src="{{ url_for('static', filename='img/infinity-appicon.png') }}" alt="Infinity Inmobiliaria" class="brand__badge">
+        <span class="brand__text">
+          <span class="brand__name">INFINITY</span>
+          <span class="brand__sub">Inmobiliaria</span>
+        </span>
+      </a>
+    </div>
+    <nav class="nav">
+      {% set bp = request.blueprint %}
+      <a href="{{ url_for('dashboard.index') }}" class="{{ 'activo' if bp == 'dashboard' }}">
+        <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg></span> Panel</a>
+      <a href="{{ url_for('operaciones.nueva') }}" class="{{ 'activo' if request.endpoint == 'operaciones.nueva' }}">
+        <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/></svg></span> Nueva operación</a>
+      <a href="{{ url_for('operaciones.listado') }}" class="{{ 'activo' if request.endpoint == 'operaciones.listado' }}">
+        <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg></span> Operaciones</a>
+      <a href="{{ url_for('agenda.mensual') }}" class="{{ 'activo' if bp == 'agenda' }}">
+        <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg></span> Agenda</a>
+      <a href="{{ url_for('reportes.mensual') }}" class="{{ 'activo' if bp == 'reportes' }}">
+        <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 14l4-4 3 3 5-6"/></svg></span> Registro / Reportes</a>
+      <a href="{{ url_for('desempeno.index') }}" class="{{ 'activo' if bp == 'desempeno' }}">
+        <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="6"/><path d="M15.5 13.5 17 22l-5-3-5 3 1.5-8.5"/></svg></span> Desempeño</a>
+      <a href="{{ url_for('figuras.index') }}" class="{{ 'activo' if bp == 'figuras' }}">
+        <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 3 6v6c0 5 4 8.5 9 10 5-1.5 9-5 9-10V6z"/><path d="m9 12 2 2 4-4"/></svg></span> Figuras</a>
+      <div class="nav__sep">Administración</div>
+      <a href="{{ url_for('agentes.listado') }}" class="{{ 'activo' if bp == 'agentes' }}">
+        <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/></svg></span> Agentes</a>
+      <a href="{{ url_for('configuracion.editar') }}" class="{{ 'activo' if bp == 'configuracion' }}">
+        <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-2.82 1.17V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 8 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 3.6 14H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 5 8.4l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 10 3.6V3a2 2 0 0 1 4 0v.09c0 .67.4 1.27 1 1.51a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 20.4 10H21a2 2 0 0 1 0 4h-.09c-.67 0-1.27.4-1.51 1z"/></svg></span> Configuración</a>
+      <form method="post" action="{{ url_for('auth.logout') }}" class="nav__logout">
+        <button type="submit">
+          <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg></span> Cerrar sesión</button>
+      </form>
+    </nav>
+  </aside>
+
+  <div class="main">
+    <header class="topbar">
+      <h1>{% block encabezado %}{% endblock %}</h1>
+      <div class="topbar__acciones">{% block acciones_top %}{% endblock %}</div>
+    </header>
+
+    <main class="contenido" id="contenido">
+      {% with mensajes = get_flashed_messages(with_categories=true) %}
+        {% if mensajes %}
+          <div class="flashes" role="alert" aria-live="assertive">
+            {% for categoria, texto in mensajes %}
+              <div class="flash flash--{{ categoria }}">{{ texto }}</div>
+            {% endfor %}
+          </div>
+        {% endif %}
+      {% endwith %}
+
+      {% block contenido %}{% endblock %}
+    </main>
+  </div>
+</div>
+<script>
+  (function () {
+    // Títulos de tarjeta como headings ARIA nivel 2 (jerarquía para lectores de pantalla)
+    document.querySelectorAll(".card__titulo").forEach(function (el) {
+      el.setAttribute("role", "heading");
+      el.setAttribute("aria-level", "2");
+    });
+    // Si hay errores de validación, llevar la vista hacia ellos
+    var err = document.querySelector(".flash--error");
+    if (err) err.scrollIntoView({ block: "center" });
+    // Estado "cargando" en el botón al enviar un formulario (evita doble envío)
+    document.querySelectorAll("form").forEach(function (f) {
+      f.addEventListener("submit", function () {
+        var b = f.querySelector('button[type="submit"]');
+        if (b) { b.classList.add("cargando"); b.setAttribute("aria-busy", "true"); }
+      });
+    });
+  })();
+</script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

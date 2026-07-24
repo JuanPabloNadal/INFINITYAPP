@@ -1,0 +1,133 @@
+{% extends "base.html" %}
+{% block titulo %}Figuras · Infinity{% endblock %}
+{% block encabezado %}Figuras adicionales de comisión{% endblock %}
+
+{% block contenido %}
+<div class="card">
+  <p class="meta mb-0">
+    Definidas en el <strong>Acta de Asamblea N.º 001/2026</strong> (7 de febrero de 2026).
+    Son roles que pueden intervenir en una compraventa (incluidas las ventas de desarrollo)
+    y que se llevan una parte de la comisión de esa punta, además del agente principal.
+    Se cargan al crear la operación, marcando el checkbox correspondiente en la punta que aplique.
+  </p>
+</div>
+
+<div class="card mt-16">
+  <div class="card__titulo">Cómo se calcula</div>
+  <p class="meta">
+    Cada figura toma su % de la <strong>comisión bruta total</strong> de la punta,
+    <strong>antes</strong> de aplicar cualquier retención. Lo que resta queda para el
+    agente principal. Después, <strong>tanto el agente principal como cada figura dejan,
+    cada uno, su propia retención</strong> en la inmobiliaria (no hay una retención única
+    sobre el total: puede diferir si uno tiene título de corredor y el otro no).
+  </p>
+  <div class="totales-vivo" style="margin-top:14px">
+    <div><div class="lbl">1. Comisión bruta de la punta</div><div class="val">base × %</div></div>
+    <div><div class="lbl">2. Figura(s)</div><div class="val">bruta × %figura</div></div>
+    <div><div class="lbl">3. Agente principal</div><div class="val">resto − su retención</div></div>
+  </div>
+  <p class="meta mt-16 mb-0">
+    <strong>Ejemplo del acta:</strong> venta de US$ 100.000, comisión 3% → comisión bruta
+    US$ 3.000. Con un datero (20%): el datero se lleva US$ 600 (menos su propia retención),
+    y el agente principal se reparte lo que queda, US$ 2.400 (menos la suya).
+  </p>
+</div>
+
+<div class="grid grid--2 mt-16">
+  <div class="card">
+    <div class="card__titulo">
+      Datero
+      <span class="chip chip--cv">Solo compraventa · {{ cfg.datero_pct|porcentaje }}</span>
+    </div>
+    <p class="meta">
+      Agente de Infinity que acerca o consigue un comprador que <strong>ya tiene contacto
+      con otra inmobiliaria</strong>, y le ofrece a ese comprador una propiedad de
+      <strong>otro agente de Infinity</strong>. Debe coordinar la visita con la otra
+      inmobiliaria — es indispensable.
+    </p>
+    <p class="meta mb-0">
+      <strong>Rechazado en alquileres</strong> (votación unánime). Cobra
+      <strong>{{ cfg.datero_pct|porcentaje }}</strong> de la comisión bruta de la punta
+      (configurable en <a href="{{ url_for('configuracion.editar') }}">Configuración</a>).
+      El agente datero debe ser distinto al agente principal de esa punta.
+    </p>
+  </div>
+
+  <div class="card">
+    <div class="card__titulo">
+      Captador de desarrollo
+      <span class="chip chip--desarrollo">Solo desarrollos · {{ cfg.captador_desarrollo_pct|porcentaje }}</span>
+    </div>
+    <p class="meta">
+      Agente que introdujo a la inmobiliaria un cliente desarrollista, y mantiene el
+      contacto con esa desarrolladora. Es un rol <strong>recurrente por desarrollo</strong>:
+      cobra en cada operación de ese desarrollo, aunque no trabaje esa venta puntual.
+    </p>
+    <p class="meta">
+      <strong>Exigencias obligatorias:</strong> contacto constante con la desarrollista,
+      informarse de novedades, responder consultas, dar capacitaciones mensuales al resto
+      de los agentes, y mantener actualizados los precios semanalmente.
+    </p>
+    <p class="meta mb-0">
+      Cobra <strong>{{ cfg.captador_desarrollo_pct|porcentaje }}</strong> de la comisión bruta
+      (equivale al 1% del precio de venta cuando la comisión es 3%). Se registra por agente en
+      <a href="{{ url_for('agentes.listado') }}">Agentes</a> y se autocompleta al cargar una
+      operación de ese desarrollo (editable por operación).
+    </p>
+
+    {% if captadores %}
+      <div class="tabla-wrap mt-16">
+        <table class="tabla">
+          <thead><tr><th>Agente</th><th>Desarrollos que captó</th></tr></thead>
+          <tbody>
+            {% for a in captadores %}
+            <tr>
+              <td>{{ a.nombre_completo }}</td>
+              <td>{{ a.lista_desarrollos_captados|join(', ') or '—' }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <div class="vacio-estado mb-0" style="padding:24px 12px">
+        <p>Todavía no hay ningún agente marcado como captador de desarrollo.</p>
+        <a href="{{ url_for('agentes.listado') }}" class="btn btn--borde btn--sm">Ir a Agentes</a>
+      </div>
+    {% endif %}
+  </div>
+</div>
+
+<div class="card mt-16">
+  <div class="card__titulo">
+    Agente Asistente al Ausente (AAA)
+    <span class="chip chip--cv">Solo compraventa</span>
+  </div>
+  <p class="meta">
+    Agente que, permaneciendo físicamente en Salta, asiste a un agente que está de viaje
+    (ausente) en cualquier tarea, diligencia o proceso de una operación en curso, hasta su
+    conclusión y firma. La remuneración depende de la situación concreta:
+  </p>
+  <div class="tabla-wrap">
+    <table class="tabla">
+      <thead><tr><th>Situación</th><th>Descripción</th><th class="num">% de la comisión de la punta</th></tr></thead>
+      <tbody>
+        {% for s in aaa_situaciones %}
+        <tr>
+          <td><strong>{{ s }}</strong></td>
+          <td>{{ etiqueta_aaa_situacion[s] }}</td>
+          <td class="num">
+            {% if s == 'A' %}US$100 fijo, o 10% si la comisión es menor a US$1.000
+            {% else %}{{ aaa_pct_situacion[s] }}%{% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <p class="meta mt-16 mb-0">
+    El agente AAA debe ser distinto al agente principal (el ausente) de esa punta.
+    La retención de cada uno se define por separado al cargar la operación.
+  </p>
+</div>
+{% endblock %}

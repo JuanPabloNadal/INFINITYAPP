@@ -1,0 +1,239 @@
+{% extends "base.html" %}
+{% block encabezado %}
+<span class="periodo-nav">
+  <a class="periodo-nav__btn" href="{{ url_for('dashboard.index', mes=nav.mes_ant, anio=nav.anio_ant) }}" aria-label="Mes anterior">‹</a>
+  <span>PANEL · {{ periodo }}</span>
+  <a class="periodo-nav__btn" href="{{ url_for('dashboard.index', mes=nav.mes_sig, anio=nav.anio_sig) }}" aria-label="Mes siguiente">›</a>
+  {% if not es_mes_actual %}
+    <a class="periodo-nav__hoy" href="{{ url_for('dashboard.index') }}">Hoy</a>
+  {% endif %}
+</span>
+{% endblock %}
+{% block acciones_top %}
+  <form action="{{ url_for('operaciones.listado') }}" method="get" class="topbar-search" role="search">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+    <input type="search" name="q" placeholder="Buscar operación, agente…" aria-label="Buscar operación o agente">
+  </form>
+  <a href="{{ url_for('operaciones.nueva') }}" class="btn btn--primario">＋ Nueva operación</a>
+{% endblock %}
+
+{% block contenido %}
+
+{# ---------- Tira de KPIs ---------- #}
+<div class="kpi-strip">
+  <div class="kpi">
+    <div class="kpi__label">Operaciones del mes</div>
+    <div class="kpi__valor">{{ operaciones_mes|length }}</div>
+    {% if var_operaciones is not none %}
+      <div class="kpi__nota {{ 'kpi__nota--pos' if var_operaciones >= 0 else 'kpi__nota--neg' }}">
+        {{ '▲' if var_operaciones >= 0 else '▼' }} {{ var_operaciones|abs }}% vs. {{ nombre_mes(mes_anterior) }}
+      </div>
+    {% else %}
+      <div class="kpi__nota">{{ total_operaciones }} en total</div>
+    {% endif %}
+  </div>
+
+  <div class="kpi">
+    <div class="kpi__label">Comisión bruta · US$</div>
+    <div class="kpi__valor">{{ usd.comision_bruta|moneda('USD') if usd else '—' }}</div>
+    <div class="kpi__nota">{{ cv_total_mes }} compraventa{{ 's' if cv_total_mes != 1 }}</div>
+  </div>
+
+  <div class="kpi kpi--destacada">
+    <div class="kpi__label">Retención inmobiliaria</div>
+    <div class="kpi__valor">{{ usd.monto_inmobiliaria|moneda('USD') if usd else '—' }}</div>
+    <div class="kpi__nota">
+      {% if retencion_pct_usd is not none %}{{ retencion_pct_usd }}% de retención{% else %}Sin datos aún{% endif %}
+    </div>
+  </div>
+
+  <div class="kpi">
+    <div class="kpi__label">Reparto a agentes · US$</div>
+    <div class="kpi__valor">{{ usd.monto_agente_total|moneda('USD') if usd else '—' }}</div>
+    <div class="kpi__nota">
+      {% set n_agentes = usd.por_agente|length if usd else 0 %}
+      {{ n_agentes }} agente{{ 's' if n_agentes != 1 }} activo{{ 's' if n_agentes != 1 }}
+    </div>
+  </div>
+
+  <div class="kpi">
+    <div class="kpi__label">Alquileres · $</div>
+    <div class="kpi__valor">{{ (ars.comision_bruta|compacto) if ars else '—' }}</div>
+    <div class="kpi__nota">{{ ('Retención $ ' ~ (ars.monto_inmobiliaria|compacto)) if ars else 'Sin datos aún' }}</div>
+  </div>
+</div>
+
+{# ---------- Fila hero: retención + operaciones por mes ---------- #}
+<div class="hero-grid">
+  <div class="card-hero">
+    <div class="card-hero__head">
+      <div>
+        <div class="card-hero__titulo">Quedó en la inmobiliaria</div>
+        <div class="card-hero__periodo">{{ periodo }}</div>
+      </div>
+      {% if mom_badge %}
+        <span class="hero-badge {{ 'hero-badge--neg' if mom_badge.pct < 0 }}">
+          {{ '▲' if mom_badge.pct >= 0 else '▼' }} {{ mom_badge.pct|abs }}% MoM
+        </span>
+      {% endif %}
+    </div>
+    <div class="card-hero__cols">
+      <div>
+        <div class="card-hero__col-lbl">Compraventa · US$</div>
+        <div class="card-hero__col-val">{{ usd.monto_inmobiliaria|numero(0) if usd else '—' }}</div>
+      </div>
+      <div class="card-hero__divider"></div>
+      <div>
+        <div class="card-hero__col-lbl">Alquiler · $</div>
+        <div class="card-hero__col-val card-hero__col-val--alq">{{ (ars.monto_inmobiliaria|compacto) if ars else '—' }}</div>
+      </div>
+    </div>
+    {% if spark_usd.line %}
+      <svg viewBox="0 0 300 78" preserveAspectRatio="none" class="card-hero__spark">
+        <defs>
+          <linearGradient id="hg" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#E87722" stop-opacity=".38"/>
+            <stop offset="1" stop-color="#E87722" stop-opacity="0"/>
+          </linearGradient>
+        </defs>
+        <path d="{{ spark_usd.area }}" fill="url(#hg)"/>
+        <polyline points="{{ spark_usd.line }}" fill="none" stroke="#F39A4E" stroke-width="2.5"
+                  stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <div class="card-hero__spark-labels">
+        {% for m in spark_labels %}<span>{{ m }}</span>{% endfor %}
+      </div>
+    {% endif %}
+  </div>
+
+  <div class="card">
+    <div class="card__titulo">
+      <span>Operaciones por mes · {{ anio }}</span>
+      <span class="leyenda">
+        <span class="leyenda__item"><i style="background:var(--naranja)"></i>Compraventa ({{ total_cv_anio }})</span>
+        <span class="leyenda__item"><i style="background:var(--info)"></i>Alquiler ({{ total_alq_anio }})</span>
+      </span>
+    </div>
+    {% if bars %}
+      <div class="bars-wrap">
+        {% for b in bars %}
+          <div class="bars-col">
+            <div class="bars-col__stack">
+              <div class="bars-col__cv" style="height:{{ b.h_cv }}px"></div>
+              <div class="bars-col__alq" style="height:{{ b.h_alq }}px"></div>
+            </div>
+            <span class="bars-col__label">{{ b.mes }}</span>
+          </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="vacio-estado">
+        <img class="vacio-badge" src="{{ url_for('static', filename='img/infinity-appicon.png') }}" alt="">
+        <p>Todavía no hay operaciones este año.</p>
+      </div>
+    {% endif %}
+  </div>
+</div>
+
+{# ---------- Donut + Ranking de agentes ---------- #}
+<div class="media-grid">
+  <div class="card">
+    <div class="card__titulo">Compraventa vs. Alquiler</div>
+    {% if operaciones_mes %}
+      <div class="donut-wrap">
+        <div class="donut" style="background: conic-gradient(var(--naranja) 0 {{ cv_deg }}deg, var(--info) {{ cv_deg }}deg 360deg)">
+          <div class="donut__hole">
+            <div class="donut__total">{{ operaciones_mes|length }}</div>
+            <div class="donut__total-lbl">Operaciones</div>
+          </div>
+        </div>
+        <div class="donut__legend">
+          <div>
+            <div class="donut__legend-row">
+              <span class="donut__legend-nombre"><i class="donut__legend-dot" style="background:var(--naranja)"></i>Compraventa</span>
+              <span class="num-mono" style="font-weight:600">{{ cv_total_mes }}</span>
+            </div>
+            <div class="donut__legend-detalle">{{ cv_pct }}% · {{ usd.comision_bruta|moneda('USD') if usd else '—' }} bruto</div>
+          </div>
+          <div>
+            <div class="donut__legend-row">
+              <span class="donut__legend-nombre"><i class="donut__legend-dot" style="background:var(--info)"></i>Alquiler</span>
+              <span class="num-mono" style="font-weight:600">{{ alq_total_mes }}</span>
+            </div>
+            <div class="donut__legend-detalle">{{ alq_pct }}% · {{ ('$ ' ~ (ars.comision_bruta|compacto)) if ars else '—' }} bruto</div>
+          </div>
+        </div>
+      </div>
+    {% else %}
+      <div class="vacio-estado">
+        <img class="vacio-badge" src="{{ url_for('static', filename='img/infinity-appicon.png') }}" alt="">
+        <p>Todavía no hay operaciones este mes.</p>
+        <a href="{{ url_for('operaciones.nueva') }}" class="btn btn--primario">Cargar la primera</a>
+      </div>
+    {% endif %}
+  </div>
+
+  <div class="card">
+    <div class="card__titulo">
+      Ranking de agentes
+      <span class="kpi__moneda">Reparto US$ · {{ nombre_mes(mes_actual) }}</span>
+    </div>
+    {% if ranking_mes %}
+      <div class="ranking">
+        {% for r in ranking_mes %}
+          <div class="rank-fila">
+            <div class="rank-pos">{{ loop.index }}</div>
+            <div class="rank-cuerpo">
+              <div class="rank-top">
+                <span class="rank-nombre">{{ r.nombre }}</span>
+                <span class="rank-monto">{{ r.monto|moneda('USD') }}</span>
+              </div>
+              <div class="rank-barra-track">
+                <div class="rank-barra" style="width:{{ r.pct }}%"></div>
+              </div>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="vacio-estado">
+        <img class="vacio-badge" src="{{ url_for('static', filename='img/infinity-appicon.png') }}" alt="">
+        <p>Sin reparto a agentes este mes.</p>
+      </div>
+    {% endif %}
+  </div>
+</div>
+
+{# ---------- Últimas operaciones ---------- #}
+<div class="card">
+  <div class="card__titulo">Últimas operaciones
+    <a class="btn btn--borde btn--sm" href="{{ url_for('operaciones.listado') }}">Ver todas</a>
+  </div>
+  {% if ultimas %}
+  <div class="tabla-wrap">
+    <table class="tabla">
+      <thead><tr>
+        <th>Fecha</th><th>Tipo</th><th>Propiedad</th><th>Agentes</th>
+        <th class="num">Comisión bruta</th><th class="num">Inmobiliaria</th>
+      </tr></thead>
+      <tbody>
+        {% for op in ultimas %}
+        <tr onclick="location.href='{{ url_for('operaciones.ver', operacion_id=op.id) }}'" style="cursor:pointer">
+          <td>{{ op.fecha|fecha }}</td>
+          <td><span class="chip chip--{{ 'cv' if op.tipo == 'COMPRAVENTA' else 'alq' }}">
+            {{ 'Compraventa' if op.tipo == 'COMPRAVENTA' else 'Alquiler' }}</span></td>
+          <td>{{ op.propiedad }}</td>
+          <td>{{ op.agentes_intervinientes|join(', ') or '—' }}</td>
+          <td class="num dinero">{{ op.comision_bruta_total|moneda(op.moneda) }}</td>
+          <td class="num dinero">{{ op.monto_inmobiliaria_total|moneda(op.moneda) }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+    <div class="vacio-estado"><p>No hay operaciones cargadas.</p></div>
+  {% endif %}
+</div>
+
+{% endblock %}

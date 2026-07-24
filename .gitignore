@@ -1,0 +1,24 @@
+# Entornos y cache de Python
+venv/
+__pycache__/
+*.pyc
+
+# Base de datos local con datos REALES: NUNCA subir a GitHub.
+# (En la nube los datos viven en Neon, no en el repo.)
+instance/
+*.db
+
+# Logs
+infinity.log
+
+# Paquete de instalación local y logos originales (no hacen falta para el deploy)
+Instalador/
+LOGOS/
+*.zip
+
+# Vercel
+.vercel/
+
+# Sistema
+.DS_Store
+Thumbs.db

@@ -1,0 +1,19 @@
+# Dependencias de Infinity Inmobiliaria.
+# Sirve tanto para el despliegue en la nube (Vercel + Neon) como para la
+# instalación local de escritorio.
+
+# --- Núcleo de la app (nube y local) ---
+Flask==3.0.3
+Flask-SQLAlchemy==3.1.1
+SQLAlchemy==2.0.36
+openpyxl==3.1.5
+reportlab==4.2.5
+python-dateutil==2.9.0.post0
+Pillow==12.2.0
+
+# --- Base de datos PostgreSQL (nube: Neon). En local se ignora, se usa SQLite ---
+psycopg[binary]>=3.1,<4
+
+# --- Solo escritorio local (bandeja del sistema + servidor). En Vercel no se usan ---
+waitress==3.0.2
+pystray==0.19.5

@@ -1,0 +1,122 @@
+{% extends "base.html" %}
+{% block titulo %}Configuración · Infinity{% endblock %}
+{% block encabezado %}Configuración{% endblock %}
+
+{% block contenido %}
+<form method="post">
+  <div class="card" style="max-width:680px">
+    <div class="card__titulo">Parámetros por defecto</div>
+    <p class="meta">Estos valores se usan como punto de partida al cargar operaciones. Siempre se pueden ajustar en cada operación.</p>
+
+    <div class="form-grid form-grid--2 mt-16">
+      <div class="campo">
+        <label>Comisión por defecto — Compraventa (%)</label>
+        <input type="number" step="0.01" min="0" name="comision_default_compraventa"
+               value="{{ cfg.comision_default_compraventa }}">
+      </div>
+      <div class="campo">
+        <label>Comisión por defecto — Alquiler (%)</label>
+        <input type="number" step="0.01" min="0" name="comision_default_alquiler"
+               value="{{ cfg.comision_default_alquiler }}">
+      </div>
+    </div>
+
+    <div class="form-grid form-grid--2 mt-16">
+      <div class="campo">
+        <label>Opciones de retención (%)</label>
+        <input type="text" name="opciones_retencion" value="{{ cfg.opciones_retencion }}">
+        <span class="hint">Separadas por coma. Ej.: 30,20,10</span>
+      </div>
+      <div class="campo">
+        <label>Moneda por defecto — Alquiler</label>
+        <select name="moneda_default_alquiler">
+          {% for m in monedas %}
+            <option value="{{ m }}" {{ 'selected' if cfg.moneda_default_alquiler == m }}>
+              {{ 'Pesos (ARS)' if m == 'ARS' else 'Dólares (US$)' }}</option>
+          {% endfor %}
+        </select>
+      </div>
+    </div>
+
+    <div class="form-grid form-grid--2 mt-16">
+      <div class="campo">
+        <label>Datero — % sobre la comisión</label>
+        <input type="number" step="0.01" min="0.01" name="datero_pct" value="{{ cfg.datero_pct }}">
+        <span class="hint">Acta 001/2026. Solo compraventa.</span>
+      </div>
+      <div class="campo">
+        <label>Captador de desarrollo — % sobre la comisión</label>
+        <input type="number" step="0.01" min="0.01" name="captador_desarrollo_pct" value="{{ cfg.captador_desarrollo_pct }}">
+        <span class="hint">Acta 001/2026. Solo compraventa.</span>
+      </div>
+    </div>
+  </div>
+  <div class="barra-acciones mt-16">
+    <span></span>
+    <button type="submit" class="btn btn--primario">Guardar configuración</button>
+  </div>
+</form>
+
+<div class="card mt-16" style="max-width:680px">
+  <div class="card__titulo">Figuras personalizadas</div>
+  <p class="meta">
+    Para casos excepcionales no previstos por el Acta 001/2026 (datero, captador de desarrollo, AAA).
+    Se comportan como el datero, con % editable en cada operación y disponibles tanto en compraventa
+    como en alquiler.
+  </p>
+
+  {% if tipos_figura %}
+  <div class="tabla-wrap mt-16">
+  <table class="tabla">
+    <thead>
+      <tr>
+        <th>Nombre</th>
+        <th>% sugerido</th>
+        <th>Estado</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for t in tipos_figura %}
+      <tr>
+        <td>{{ t.nombre }}</td>
+        <td>{{ t.porcentaje_sugerido|porcentaje }}</td>
+        <td>
+          {% if t.activo %}<span class="chip chip--infinity">Activa</span>
+          {% else %}<span class="chip chip--otra">Inactiva</span>{% endif %}
+        </td>
+        <td class="acciones-fila">
+          <form method="post" action="{{ url_for('configuracion.alternar_figura', figura_id=t.id) }}" style="display:inline">
+            <button type="submit" class="btn btn--borde btn--sm">{{ 'Desactivar' if t.activo else 'Activar' }}</button>
+          </form>
+          <form method="post" action="{{ url_for('configuracion.eliminar_figura', figura_id=t.id) }}" style="display:inline"
+                onsubmit="return confirm('¿Eliminar la figura {{ t.nombre }}? Si ya se usó en alguna operación, se desactivará en vez de borrarla.');">
+            <button type="submit" class="btn btn--borde btn--sm">Eliminar</button>
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  {% else %}
+  <p class="meta mt-16">Todavía no creaste ninguna figura personalizada.</p>
+  {% endif %}
+
+  <form method="post" action="{{ url_for('configuracion.nueva_figura') }}" class="mt-16">
+    <div class="form-grid form-grid--3">
+      <div class="campo">
+        <label>Nombre de la figura</label>
+        <input type="text" name="nombre" placeholder="Ej.: Referido especial" required>
+      </div>
+      <div class="campo">
+        <label>% sugerido</label>
+        <input type="number" step="0.01" min="0.01" name="porcentaje_sugerido" value="10" required>
+      </div>
+      <div class="campo" style="align-self:end">
+        <button type="submit" class="btn btn--primario">Crear figura</button>
+      </div>
+    </div>
+  </form>
+</div>
+{% endblock %}

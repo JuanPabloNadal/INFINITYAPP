@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block titulo %}Agentes · Infinity{% endblock %}
+{% block encabezado %}Agentes{% endblock %}
+{% block acciones_top %}
+  <a href="{{ url_for('agentes.nuevo') }}" class="btn btn--primario">＋ Nuevo agente</a>
+{% endblock %}
+
+{% block contenido %}
+<div class="card">
+  {% if agentes %}
+  <div class="tabla-wrap">
+    <table class="tabla">
+      <thead><tr>
+        <th>Apellido y nombre</th><th>Título de corredor</th><th>Matrícula</th>
+        <th>Retención sugerida</th><th>Captador de desarrollo</th><th>Estado</th><th></th>
+      </tr></thead>
+      <tbody>
+        {% for a in agentes %}
+        <tr>
+          <td>{{ a.nombre_completo }}</td>
+          <td>{{ 'Sí' if a.tiene_titulo_corredor else 'No' }}</td>
+          <td>{{ a.matricula or '—' }}</td>
+          <td>{{ a.retencion_sugerida }}%</td>
+          <td>
+            {% if a.es_captador_desarrollo and a.lista_desarrollos_captados %}
+              <span class="chip chip--desarrollo">{{ a.lista_desarrollos_captados|join(', ') }}</span>
+            {% else %}—{% endif %}
+          </td>
+          <td>{% if a.activo %}<span class="chip chip--infinity">Activo</span>
+              {% else %}<span class="chip chip--otra">Inactivo</span>{% endif %}</td>
+          <td style="display:flex;gap:6px">
+            <a href="{{ url_for('agentes.editar', agente_id=a.id) }}" class="btn btn--borde btn--sm">Editar</a>
+            <form method="post" action="{{ url_for('agentes.eliminar', agente_id=a.id) }}"
+                  onsubmit="return confirm('¿Eliminar o desactivar este agente?');">
+              <button class="btn btn--peligro btn--sm">Eliminar</button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+    <div class="vacio-estado"><div class="ico">◉</div>
+      <p>Todavía no cargaste agentes.</p>
+      <a href="{{ url_for('agentes.nuevo') }}" class="btn btn--primario">Crear el primero</a>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}
