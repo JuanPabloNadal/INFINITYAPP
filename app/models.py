@@ -115,6 +115,11 @@ class Agente(db.Model):
     matricula = db.Column(db.String(60))
     activo = db.Column(db.Boolean, default=True, nullable=False)
 
+    # Retención que este agente deja en la inmobiliaria, si se pactó una
+    # distinta de la general. NULL = automática (20% con título de corredor,
+    # 30% sin él). Admite 0 (el agente no deja retención).
+    retencion_default = db.Column(db.Integer)
+
     # Captador de desarrollo (Acta 001/2026): cobra un % en CADA operación
     # de los desarrollos que captó, aunque no trabaje esa venta puntual.
     es_captador_desarrollo = db.Column(db.Boolean, default=False, nullable=False)
@@ -128,8 +133,15 @@ class Agente(db.Model):
 
     @property
     def retencion_sugerida(self):
+        # Si el agente tiene una retención pactada propia, manda esa (puede ser 0).
+        if self.retencion_default is not None:
+            return self.retencion_default
         # Con título de corredor se sugiere 20%; por defecto 30%.
         return 20 if self.tiene_titulo_corredor else 30
+
+    @property
+    def tiene_retencion_propia(self):
+        return self.retencion_default is not None
 
     @property
     def lista_desarrollos_captados(self):

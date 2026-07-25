@@ -20,6 +20,14 @@
         <label>Matrícula (opcional)</label>
         <input type="text" name="matricula" value="{{ agente.matricula if agente else '' }}">
       </div>
+      <div class="campo">
+        <label>Retención propia (opcional)</label>
+        <input type="number" name="retencion_default" min="0" max="100" step="1"
+               placeholder="Automática"
+               value="{{ agente.retencion_default if agente and agente.retencion_default is not none else '' }}">
+        <span class="hint">% que este agente deja en la inmobiliaria. Vacío = automática
+          (20% con título de corredor, 30% sin él). Se admite 0.</span>
+      </div>
     </div>
     <div class="mt-16 check">
       <input type="checkbox" id="titulo" name="tiene_titulo_corredor"

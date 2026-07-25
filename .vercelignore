@@ -14,7 +14,9 @@ seed_2026.py
 seed_alquileres_2026.py
 tests_app.py
 tests_calculo.py
+tests_retenciones.py
 setup.bat
 iniciar.bat
 iniciar.vbs
 migrar_a_postgres.py
+aplicar_retenciones_default.py

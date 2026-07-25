@@ -46,7 +46,7 @@
         <label>Retención inmobiliaria</label>
         <select name="punta{{ i }}_retencionPorcentaje" class="retencion-select" data-punta="{{ i }}">
           {% set ret = form.get('punta' ~ i ~ '_retencionPorcentaje', '30')|string %}
-          {% for r in cfg.lista_retencion %}
+          {% for r in retenciones %}
             <option value="{{ r }}" {{ 'selected' if ret == r|string }}>{{ r }}%</option>
           {% endfor %}
         </select>
@@ -130,7 +130,7 @@
             <label>Retención (del datero)</label>
             <select name="punta{{ i }}_dateroRetencion" class="figura-retencion-select" data-punta="{{ i }}" data-figura="datero">
               {% set ret_datero = form.get('punta' ~ i ~ '_dateroRetencion', '30')|string %}
-              {% for r in cfg.lista_retencion %}
+              {% for r in retenciones %}
                 <option value="{{ r }}" {{ 'selected' if ret_datero == r|string }}>{{ r }}%</option>
               {% endfor %}
             </select>
@@ -166,7 +166,7 @@
               <label>Retención (del captador)</label>
               <select name="punta{{ i }}_captadorRetencion" class="figura-retencion-select" data-punta="{{ i }}" data-figura="captador">
                 {% set ret_capt = form.get('punta' ~ i ~ '_captadorRetencion', '30')|string %}
-                {% for r in cfg.lista_retencion %}
+                {% for r in retenciones %}
                   <option value="{{ r }}" {{ 'selected' if ret_capt == r|string }}>{{ r }}%</option>
                 {% endfor %}
               </select>
@@ -209,7 +209,7 @@
             <label>Retención (del AAA)</label>
             <select name="punta{{ i }}_aaaRetencion" class="figura-retencion-select" data-punta="{{ i }}" data-figura="aaa">
               {% set ret_aaa = form.get('punta' ~ i ~ '_aaaRetencion', '30')|string %}
-              {% for r in cfg.lista_retencion %}
+              {% for r in retenciones %}
                 <option value="{{ r }}" {{ 'selected' if ret_aaa == r|string }}>{{ r }}%</option>
               {% endfor %}
             </select>
@@ -253,7 +253,7 @@
             <select name="punta{{ i }}_personalizada{{ t.id }}Retencion" class="figura-retencion-select"
                     data-punta="{{ i }}" data-figura="personalizada{{ t.id }}">
               {% set ret_pers = form.get('punta' ~ i ~ '_personalizada' ~ t.id ~ 'Retencion', '30')|string %}
-              {% for r in cfg.lista_retencion %}
+              {% for r in retenciones %}
                 <option value="{{ r }}" {{ 'selected' if ret_pers == r|string }}>{{ r }}%</option>
               {% endfor %}
             </select>

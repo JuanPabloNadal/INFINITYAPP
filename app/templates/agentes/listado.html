@@ -20,7 +20,8 @@
           <td>{{ a.nombre_completo }}</td>
           <td>{{ 'Sí' if a.tiene_titulo_corredor else 'No' }}</td>
           <td>{{ a.matricula or '—' }}</td>
-          <td>{{ a.retencion_sugerida }}%</td>
+          <td>{{ a.retencion_sugerida }}%{% if a.tiene_retencion_propia %}
+              <span class="meta">propia</span>{% endif %}</td>
           <td>
             {% if a.es_captador_desarrollo and a.lista_desarrollos_captados %}
               <span class="chip chip--desarrollo">{{ a.lista_desarrollos_captados|join(', ') }}</span>

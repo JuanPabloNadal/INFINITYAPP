@@ -72,11 +72,29 @@ def _valores_distintos(columna):
                    .filter(columna.isnot(None)).distinct().all() if r[0]})
 
 
-def _datos_formulario():
+def _retenciones_disponibles(cfg, agentes, operacion=None):
+    """Opciones del selector de retención: las generales de Configuración, más
+    la retención propia de cada agente (para que sea elegible aunque no esté
+    en esa lista — ej. 0%), más las ya usadas por la operación que se edita
+    (para no perderlas al reguardar). Ordenadas de mayor a menor."""
+    valores = set(cfg.lista_retencion)
+    valores.update(a.retencion_sugerida for a in agentes)
+    if operacion is not None:
+        for linea in operacion.lineas:
+            if linea.retencion_porcentaje is not None:
+                valores.add(linea.retencion_porcentaje)
+            for figura in linea.figuras:
+                if figura.retencion_porcentaje is not None:
+                    valores.add(figura.retencion_porcentaje)
+    return sorted(valores, reverse=True)
+
+
+def _datos_formulario(operacion=None):
     cfg = Configuracion.obtener()
     agentes = Agente.query.filter_by(activo=True).order_by(Agente.apellido, Agente.nombre).all()
     inmobiliarias = _valores_distintos(LineaComision.nombre_inmobiliaria)
     desarrollos = _valores_distintos(LineaComision.nombre_desarrollo)
+    retenciones = _retenciones_disponibles(cfg, agentes, operacion)
 
     # Mapa "nombre de desarrollo" -> captador registrado (para autocompletar
     # en el formulario el agente captador de desarrollo, Acta 001/2026).
@@ -90,7 +108,8 @@ def _datos_formulario():
         .order_by(TipoFiguraPersonalizada.nombre).all()
     )
 
-    return cfg, agentes, inmobiliarias, desarrollos, captadores, tipos_figura_personalizada
+    return (cfg, agentes, inmobiliarias, desarrollos, captadores,
+            tipos_figura_personalizada, retenciones)
 
 
 def _con_personalizadas_en_uso(tipos_figura_personalizada, operacion):
@@ -110,7 +129,8 @@ def _con_personalizadas_en_uso(tipos_figura_personalizada, operacion):
 
 @bp.route("/nueva", methods=["GET", "POST"])
 def nueva():
-    cfg, agentes, inmobiliarias, desarrollos, captadores, tipos_figura_personalizada = _datos_formulario()
+    (cfg, agentes, inmobiliarias, desarrollos, captadores,
+     tipos_figura_personalizada, retenciones) = _datos_formulario()
 
     if request.method == "POST":
         operacion, errores, advertencias = parsear_operacion(request.form)
@@ -123,7 +143,7 @@ def nueva():
                 "operaciones/form.html", modo="nueva", operacion=operacion,
                 cfg=cfg, agentes=agentes, inmobiliarias=inmobiliarias, desarrollos=desarrollos,
                 captadores=captadores, tipos_figura_personalizada=tipos_figura_personalizada,
-                aaa_situaciones=AAA_SITUACIONES,
+                retenciones=retenciones, aaa_situaciones=AAA_SITUACIONES,
                 etiqueta_aaa_situacion=ETIQUETA_AAA_SITUACION,
                 roles_por_tipo=ROLES_POR_TIPO, form=request.form,
             )
@@ -136,7 +156,7 @@ def nueva():
         "operaciones/form.html", modo="nueva", operacion=None,
         cfg=cfg, agentes=agentes, inmobiliarias=inmobiliarias, desarrollos=desarrollos,
         captadores=captadores, tipos_figura_personalizada=tipos_figura_personalizada,
-        aaa_situaciones=AAA_SITUACIONES,
+        retenciones=retenciones, aaa_situaciones=AAA_SITUACIONES,
         etiqueta_aaa_situacion=ETIQUETA_AAA_SITUACION,
         roles_por_tipo=ROLES_POR_TIPO, form={},
     )
@@ -151,7 +171,8 @@ def ver(operacion_id):
 @bp.route("/<int:operacion_id>/editar", methods=["GET", "POST"])
 def editar(operacion_id):
     operacion = db.session.get(Operacion, operacion_id) or abort(404)
-    cfg, agentes, inmobiliarias, desarrollos, captadores, tipos_figura_personalizada = _datos_formulario()
+    (cfg, agentes, inmobiliarias, desarrollos, captadores,
+     tipos_figura_personalizada, retenciones) = _datos_formulario(operacion)
     tipos_figura_personalizada = _con_personalizadas_en_uso(tipos_figura_personalizada, operacion)
 
     if request.method == "POST":
@@ -165,7 +186,7 @@ def editar(operacion_id):
                 "operaciones/form.html", modo="editar", operacion=operacion,
                 cfg=cfg, agentes=agentes, inmobiliarias=inmobiliarias, desarrollos=desarrollos,
                 captadores=captadores, tipos_figura_personalizada=tipos_figura_personalizada,
-                aaa_situaciones=AAA_SITUACIONES,
+                retenciones=retenciones, aaa_situaciones=AAA_SITUACIONES,
                 etiqueta_aaa_situacion=ETIQUETA_AAA_SITUACION,
                 roles_por_tipo=ROLES_POR_TIPO, form=request.form,
             )
@@ -177,7 +198,7 @@ def editar(operacion_id):
         "operaciones/form.html", modo="editar", operacion=operacion,
         cfg=cfg, agentes=agentes, inmobiliarias=inmobiliarias, desarrollos=desarrollos,
         captadores=captadores, tipos_figura_personalizada=tipos_figura_personalizada,
-        aaa_situaciones=AAA_SITUACIONES,
+        retenciones=retenciones, aaa_situaciones=AAA_SITUACIONES,
         etiqueta_aaa_situacion=ETIQUETA_AAA_SITUACION,
         roles_por_tipo=ROLES_POR_TIPO, form=_form_desde_operacion(operacion),
     )
@@ -220,7 +241,10 @@ def _form_desde_operacion(op):
         f[f"punta{i}_comisionPorcentaje"] = _s(l.comision_porcentaje)
         f[f"punta{i}_comisionMontoFijo"] = _s(l.comision_monto_fijo)
         f[f"punta{i}_baseCalculo"] = _s(l.base_calculo)
-        f[f"punta{i}_retencionPorcentaje"] = l.retencion_porcentaje or 30
+        # Ojo: la retención puede ser 0 (agente que no deja retención), así que
+        # no se puede usar `or 30` acá.
+        f[f"punta{i}_retencionPorcentaje"] = (
+            l.retencion_porcentaje if l.retencion_porcentaje is not None else 30)
         f[f"punta{i}_comisionMotivoEdicion"] = l.comision_motivo_edicion or ""
 
         for figura in l.figuras:

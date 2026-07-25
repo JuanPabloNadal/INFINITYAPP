@@ -64,4 +64,17 @@ def _desde_form(agente, form):
     agente.activo = form.get("activo", "on") == "on"
     agente.es_captador_desarrollo = form.get("es_captador_desarrollo") == "on"
     agente.desarrollos_captados = (form.get("desarrollos_captados") or "").strip() or None
+    agente.retencion_default = _retencion_default(form.get("retencion_default"))
     return agente
+
+
+def _retencion_default(valor):
+    """Retención propia del agente: entero 0-100, o None (= automática).
+
+    Se acepta el 0 explícitamente: hay agentes que no dejan retención.
+    """
+    texto = (valor or "").strip()
+    if not texto.isdigit():
+        return None
+    numero = int(texto)
+    return numero if 0 <= numero <= 100 else None

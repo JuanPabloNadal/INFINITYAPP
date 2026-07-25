@@ -99,6 +99,7 @@ def _migrar_esquema():
         "agentes": [
             ("es_captador_desarrollo", "BOOLEAN DEFAULT FALSE"),
             ("desarrollos_captados", "TEXT"),
+            ("retencion_default", "INTEGER"),
         ],
         "configuracion": [
             ("datero_pct", "NUMERIC(7, 4) DEFAULT 20.0"),
