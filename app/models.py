@@ -352,6 +352,10 @@ class FiguraComision(db.Model):
             return ETIQUETA_FIGURA[FIGURA_PERSONALIZADA]
         return ETIQUETA_FIGURA.get(self.tipo, self.tipo)
 
+    @property
+    def etiqueta_situacion(self):
+        return ETIQUETA_AAA_SITUACION.get(self.situacion_aaa, "")
+
 
 class TipoFiguraPersonalizada(db.Model):
     """Catálogo de figuras adicionales creadas a mano desde Configuración,
@@ -366,10 +370,6 @@ class TipoFiguraPersonalizada(db.Model):
     nombre = db.Column(db.String(80), nullable=False)
     porcentaje_sugerido = db.Column(db.Numeric(7, 4), nullable=False, default=10.0)
     activo = db.Column(db.Boolean, default=True, nullable=False)
-
-    @property
-    def etiqueta_situacion(self):
-        return ETIQUETA_AAA_SITUACION.get(self.situacion_aaa, "")
 
 
 class Configuracion(db.Model):
